@@ -150,7 +150,7 @@ if __name__ == "__main__":
             side2_joint_obs_raw_dict = side2_obs_raw['joint_obs_dict']
             # reward
             o_detector_reward, o_fighter_reward, o_game_reward, e_detector_reward, e_fighter_reward, e_game_reward = env.get_reward()
-
+ 
             side1_step_reward = 0
             side2_step_reward = 0
             for y in range(side1_detector_num):
