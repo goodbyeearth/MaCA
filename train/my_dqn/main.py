@@ -24,7 +24,7 @@ MAP_PATH = 'maps/1000_1000_fighter10v10.map'
 # RENDER = True
 RENDER = False
 MAX_EPOCH = 5000
-MAX_STEP = 400
+MAX_STEP = 800
 BATCH_SIZE = 200
 LR = 0.01                   # learning rate
 EPSILON = 0.9               # greedy policy
@@ -32,7 +32,7 @@ GAMMA = 0.9                 # reward discount
 TARGET_REPLACE_ITER = 100   # target update frequency
 DETECTOR_NUM = 0
 FIGHTER_NUM = 10
-COURSE_NUM = 16
+COURSE_NUM = 20
 ATTACK_IND_NUM = (DETECTOR_NUM + FIGHTER_NUM) * 2 + 1 # long missile attack + short missile attack + no attack
 ACTION_NUM = COURSE_NUM * ATTACK_IND_NUM
 LEARN_INTERVAL = 100
@@ -121,12 +121,17 @@ if __name__ == "__main__":
                 cur_episode_res = red_game_reward // 200
                 recent_episode_res.append(cur_episode_res)
                 episode_res_sum += cur_episode_res
-                # pop
+                # 最近几回合的胜率
                 dq_left = 0
                 if len(recent_episode_res) > dq_len:
                     dq_left = recent_episode_res.popleft()
                 episode_res_sum -= dq_left
                 tb_logger.add_scalar('recent_' + str(dq_len) + '_episode_win_rate', episode_res_sum / dq_len, x)
+                # 击败敌机剩余数量
+                destroyed_enemies = 0
+                for i in range(blue_fighter_num):
+                    destroyed_enemies += not blue_obs_dict['fighter_obs_list'][i]['alive']
+                tb_logger.add_scalar('destroyed_enemies', destroyed_enemies, x)
 
                 fighter_model.learn()
                 break

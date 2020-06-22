@@ -12,7 +12,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-COURSE_NUM = 16
+COURSE_NUM = 20
+DIST_NUM = 20
 
 class NetFighter(nn.Module):
     def __init__(self, n_actions):
@@ -34,7 +35,7 @@ class NetFighter(nn.Module):
             nn.MaxPool2d(2),            # 25 * 25 * 32
         )
         self.info_fc = nn.Sequential(
-            nn.Linear(COURSE_NUM + 2, 256),
+            nn.Linear(COURSE_NUM + 2 + COURSE_NUM + 1 + DIST_NUM + 1, 256),
             nn.Tanh(),
         )
         self.feature_fc = nn.Sequential(    # 25 * 25 * 32 + 256

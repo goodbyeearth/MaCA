@@ -1,6 +1,10 @@
 import numpy as np
 import copy
 
+import math
+COURSE_NUM = 20
+DIST_NUM = 20
+
 class ObsConstruct:
     def __init__(self, size_x, size_y, detector_num, fighter_num):
         self.battlefield_size_x = size_x
@@ -208,8 +212,8 @@ class ObsConstruct:
     def __get_data_obs(self, detector_data_obs_list, fighter_data_obs_list, joint_data_obs_dict):
         detector_data = np.full((self.detector_num, 1), -1, dtype=np.int32)
         # fighter_data = np.full((self.fighter_num, 3), -1, dtype=np.int32)
-        num_course = 16
-        fighter_data = np.full((self.fighter_num, num_course + 2), 0, dtype=np.int32)
+        fighter_data = np.full((self.fighter_num, COURSE_NUM + 2), 0, dtype=np.int32)
+        fighter_data_2 = np.full((self.fighter_num, DIST_NUM + 1 + COURSE_NUM + 1), 0, dtype=np.int32)    # target 的相对角度和相对距离
 
         # Detector info
         for x in range(self.detector_num):
@@ -218,10 +222,45 @@ class ObsConstruct:
         # Fighter info
         for x in range(self.fighter_num):
             if fighter_data_obs_list[x]['alive']:
-                rough_course = int(fighter_data_obs_list[x]['course'] // (360 / num_course))
+                rough_course = int(fighter_data_obs_list[x]['course'] // (360 / COURSE_NUM))
                 fighter_data[x, rough_course] = 1
-                scale_max = 4
-                fighter_data[x, 16] = fighter_data_obs_list[x]['l_missile_left'] / scale_max
-                fighter_data[x, 17] = fighter_data_obs_list[x]['s_missile_left'] / scale_max
 
-        return detector_data, fighter_data
+                scale = 4
+                fighter_data[x, COURSE_NUM] = fighter_data_obs_list[x]['l_missile_left'] / scale
+                fighter_data[x, COURSE_NUM + 1] = fighter_data_obs_list[x]['s_missile_left'] / scale
+
+                # 最近的 target 的距离，角度
+                dist_max = 120   # 主动观测最远距离大约 120
+                target_dist, target_course = self.__get_closest_target(fighter_data_obs_list[x]['r_visible_list'],
+                                                                       fighter_data_obs_list[x]['pos_x'],
+                                                                       fighter_data_obs_list[x]['pos_y'])
+                if target_course is not None:      # 侦测到敌人
+                    target_rough_dist = int(target_dist // (dist_max / DIST_NUM)) + 1
+                    target_rough_course = int(target_course // (360 / COURSE_NUM)) + 1
+                else:
+                    target_rough_dist = 0
+                    target_rough_course = 0
+                fighter_data_2[x, target_rough_dist] = 1
+                fighter_data_2[x, DIST_NUM + 1 + target_rough_course] = 1
+
+        return detector_data, np.concatenate((fighter_data, fighter_data_2), 1)
+
+
+    def __get_closest_target(self, r_visible_list, my_pos_x, my_pos_y):
+        min_dist = float('inf')
+        target_course = None
+        for enemy in r_visible_list:
+            relative_x, relative_y = enemy['pos_x'] - my_pos_x, enemy['pos_y'] - my_pos_y
+            dist = math.sqrt(relative_x * relative_x + relative_y * relative_y)
+            if dist < min_dist:
+                min_dist = dist
+                relative_course = math.atan2(relative_y, relative_x)
+                relative_course = int(relative_course * 180 / math.pi)
+                if relative_course < 0:
+                    relative_course += 360
+                target_course = relative_course
+
+        if target_course is not None:
+            return min_dist, target_course
+        else:
+            return None, None

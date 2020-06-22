@@ -20,7 +20,7 @@ import numpy as np
 
 DETECTOR_NUM = 0
 FIGHTER_NUM = 10
-COURSE_NUM = 16
+COURSE_NUM = 20
 ATTACK_IND_NUM = (DETECTOR_NUM + FIGHTER_NUM) * 2 + 1 # long missile attack + short missile attack + no attack
 ACTION_NUM = COURSE_NUM * ATTACK_IND_NUM
 
@@ -35,9 +35,9 @@ class Agent(BaseAgent):
         :param fighter_num: fighter quantity of this side
         """
         BaseAgent.__init__(self)
-        self.obs_ind = 'simple'
-        if not os.path.exists('model/simple/model.pkl'):
-            print('Error: agent simple model data not exist!')
+        self.obs_ind = 'my_dqn'
+        if not os.path.exists('model/my_dqn/model.pkl'):
+            print('Error: agent my_dqn model data not exist!')
             exit(1)
         self.fighter_model = dqn.RLFighter(ACTION_NUM)
 
