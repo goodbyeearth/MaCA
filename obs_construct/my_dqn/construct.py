@@ -213,7 +213,8 @@ class ObsConstruct:
         detector_data = np.full((self.detector_num, 1), -1, dtype=np.int32)
         # fighter_data = np.full((self.fighter_num, 3), -1, dtype=np.int32)
         fighter_data = np.full((self.fighter_num, COURSE_NUM + 2), 0, dtype=np.int32)
-        fighter_data_2 = np.full((self.fighter_num, DIST_NUM + 1 + COURSE_NUM + 1), 0, dtype=np.int32)    # target 的相对角度和相对距离
+        fighter_data_2 = np.full((self.fighter_num, DIST_NUM + 1 + COURSE_NUM + 1 + self.fighter_num + 1),
+                                 0, dtype=np.int32)    # target 的相对角度、相对距离、id
 
         # Detector info
         for x in range(self.detector_num):
@@ -231,7 +232,7 @@ class ObsConstruct:
 
                 # 最近的 target 的距离，角度
                 dist_max = 120   # 主动观测最远距离大约 120
-                target_dist, target_course = self.__get_closest_target(fighter_data_obs_list[x]['r_visible_list'],
+                target_dist, target_course, target_id = self.__get_closest_target(fighter_data_obs_list[x]['r_visible_list'],
                                                                        fighter_data_obs_list[x]['pos_x'],
                                                                        fighter_data_obs_list[x]['pos_y'])
                 if target_course is not None:      # 侦测到敌人
@@ -242,13 +243,14 @@ class ObsConstruct:
                     target_rough_course = 0
                 fighter_data_2[x, target_rough_dist] = 1
                 fighter_data_2[x, DIST_NUM + 1 + target_rough_course] = 1
+                fighter_data_2[x, DIST_NUM + 1 + COURSE_NUM + 1 + target_id] = 1
 
         return detector_data, np.concatenate((fighter_data, fighter_data_2), 1)
-
 
     def __get_closest_target(self, r_visible_list, my_pos_x, my_pos_y):
         min_dist = float('inf')
         target_course = None
+        target_id = 0
         for enemy in r_visible_list:
             relative_x, relative_y = enemy['pos_x'] - my_pos_x, enemy['pos_y'] - my_pos_y
             dist = math.sqrt(relative_x * relative_x + relative_y * relative_y)
@@ -259,8 +261,9 @@ class ObsConstruct:
                 if relative_course < 0:
                     relative_course += 360
                 target_course = relative_course
+                target_id = enemy['id']
 
         if target_course is not None:
-            return min_dist, target_course
+            return min_dist, target_course, target_id
         else:
-            return None, None
+            return None, None, target_id

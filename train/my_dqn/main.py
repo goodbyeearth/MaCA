@@ -18,7 +18,6 @@ from train.my_dqn import dqn
 
 import logging
 from tensorboardX import SummaryWriter
-from collections import deque
 MAP_PATH = 'maps/1000_1000_fighter10v10.map'
 
 # RENDER = True
@@ -60,9 +59,6 @@ if __name__ == "__main__":
     fighter_model = dqn.RLFighter(ACTION_NUM, e_greedy_increment=e_greedy_increment)
 
     tb_logger = SummaryWriter('./tb_log/', comment='my_dqn')
-    recent_episode_res = deque()          # loss: -1, tie: 0, win: 1
-    episode_res_sum = 0
-    dq_len = 10
 
     # execution
     for x in range(MAX_EPOCH):
@@ -116,17 +112,9 @@ if __name__ == "__main__":
             # if done, perform a learn
             if env.get_done():
                 # detector_model.learn()
-
-                """记录最近几场的胜负情况"""
+                """记录胜负情况"""
                 cur_episode_res = red_game_reward // 200
-                recent_episode_res.append(cur_episode_res)
-                episode_res_sum += cur_episode_res
-                # 最近几回合的胜率
-                dq_left = 0
-                if len(recent_episode_res) > dq_len:
-                    dq_left = recent_episode_res.popleft()
-                episode_res_sum -= dq_left
-                tb_logger.add_scalar('recent_' + str(dq_len) + '_episode_win_rate', episode_res_sum / dq_len, x)
+                tb_logger.add_scalar('cur_episode_res', cur_episode_res, x)
                 # 击败敌机剩余数量
                 destroyed_enemies = 0
                 for i in range(blue_fighter_num):
